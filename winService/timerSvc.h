@@ -7,12 +7,13 @@
 class CTimerService : public CServiceBase
 {
 public:
-	CTimerService():CServiceBase(   TEXT("TimerService"),
-					TEXT("User timer service"),
-					SERVICE_WIN32_OWN_PROCESS,
-					SERVICE_DEMAND_START,
-					SERVICE_ERROR_NORMAL) 
+	CTimerService():CServiceBase(  TEXT("TimerService"),
+								 		TEXT("TimerService"),
+								   		SERVICE_WIN32_OWN_PROCESS,
+								 		SERVICE_DEMAND_START,
+								 		SERVICE_ERROR_NORMAL) 
 	{
+		//LOG(INFO) << "CTimerService Constructor~ The Service Name = " << "TimerService" <<endl; 
 	}
 	~CTimerService();
 private:

@@ -109,6 +109,7 @@ bool CServiceInstaller::Installer(CServiceBase* service)
 
     // Create the service
 
+	std::cout<<"CServiceInstaller::Installer.Service Name ="<<service->GetName()<<endl;
     schService = CreateService( 
         schSCManager,              // SCM database 
         service->GetName(),                   // name of service 

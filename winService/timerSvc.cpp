@@ -10,10 +10,14 @@ CTimerService::~CTimerService()
 }
 void CTimerService::OnStart(DWORD argc, TCHAR* argv[])
 {
-	Sleep(5000);
-	SYSTEMTIME sysTime;
-	GetLocalTime(&sysTime);
-	cout<<"现在时间是 "<<sysTime.wYear<<sysTime.wMonth<<sysTime.wDay<<endl;
+	LOG(INFO) <<"CTimerService::OnStart Begin~ "<<endl;
+	for(int i = 0;i < 10;i++)
+	{
+		SYSTEMTIME sysTime;
+		GetLocalTime(&sysTime);
+		LOG(INFO) <<"CTimerService::OnStart "<<i<<" 现在时间是 "<<sysTime.wYear<<sysTime.wMonth<<sysTime.wDay<<endl;
+		Sleep(1000);
+	}
 	//MessageBox(str,NULL,MB_OK);
 }
 

@@ -8,6 +8,7 @@ CServiceBase::CServiceBase( char* name = "ServiceBase",
 							DWORD  dwStartType = SERVICE_DEMAND_START,
 							DWORD  dwErrorCtrlType = SERVICE_ERROR_NORMAL)
 {
+	//LOG(INFO) << "CServiceBase Constructor~ The Service Name = " << name <<endl;    
 	m_name = name;
 	m_displayName = displayName;
 	m_serviceType = dwServiceType;
@@ -26,6 +27,7 @@ CServiceBase::CServiceBase( char* name = "ServiceBase",
 
 CServiceBase::CServiceBase()
 {
+	//LOG(INFO) << "CServiceBase Constructor~ The Service Name = " <<"ServiceBase"<<endl;   
 	m_name = "ServiceBase";
 	m_displayName = "ServiceBase";
 	m_serviceType = SERVICE_WIN32_OWN_PROCESS;
@@ -59,13 +61,15 @@ char* CServiceBase::GetDisplayName()
 
 void CServiceBase::SetStatus(DWORD dwState, DWORD dwErrCode, DWORD dwWait) 
 {
-  m_svcStatus.dwCurrentState = dwState;
-  m_svcStatus.dwWin32ExitCode = dwErrCode;
-  m_svcStatus.dwWaitHint = dwWait;
+	LOG(INFO) << "CServiceBase::SetStatus~ Status = " <<dwState <<" dwErrCode = "<<dwErrCode<<" dwWait = "<<dwWait;  
+	m_svcStatus.dwCurrentState = dwState;
+	m_svcStatus.dwWin32ExitCode = dwErrCode;
+	m_svcStatus.dwWaitHint = dwWait;
 
-  ::SetServiceStatus(m_svcStatusHandle, &m_svcStatus);
+	::SetServiceStatus(m_svcStatusHandle, &m_svcStatus);
 }
 
+#if 0
 void CServiceBase::WriteToEventLog(const TCHAR* msg, WORD type) 
 {
 		HANDLE hSource = RegisterEventSource(nullptr, m_name);
@@ -76,9 +80,10 @@ void CServiceBase::WriteToEventLog(const TCHAR* msg, WORD type)
 			DeregisterEventSource(hSource);
 		}
 }
-
+#endif
 void CServiceBase::Start(DWORD argc, TCHAR* argv[])
 {
+#if 0
 	HANDLE hThread;
 
 	//创建服务线程	服务完成的功能在这里调用
@@ -89,6 +94,9 @@ void CServiceBase::Start(DWORD argc, TCHAR* argv[])
 		 return;
 	}
 	CloseHandle(hThread);
+#endif
+//	SetStatus(SERVICE_START_PENDING);
+	OnStart(argc,argv);
 	SetStatus(SERVICE_RUNNING);
 	return;
 }
@@ -148,6 +156,7 @@ BOOL  CServiceBase::RunInternal(CServiceBase* svc)
 	success = StartServiceCtrlDispatcher(tableEntry);
 	if(success == 0)
 	{
+
 		cout<<"StartServiceCtrlDispatcher Failed~ Error Code = "<<::GetLastError()<<endl;	
 	}	
 	return success;
@@ -161,14 +170,14 @@ void WINAPI CServiceBase::SvcMain(DWORD argc, TCHAR* argv[])
 	
 	if(m_service == NULL)
 	{                               
-		//cout<<"Error! there is no service to execute! "<<endl;
+		LOG(INFO) << "CServiceBase::SvcMain: service is not available!" <<endl;    
 	}
 	m_service->m_svcStatusHandle = RegisterServiceCtrlHandlerEx(m_service->GetName(),ServiceCtrlHandler,NULL);
 	
 
 	if(NULL == m_service->m_svcStatusHandle)
 	{
-		cout<<"Error! CServiceBase::SvcMain RegisterService! "<<endl;
+		LOG(INFO) << "CServiceBase::SvcMain: service Status Handler is not available!" <<endl;  
 	}
 	#endif
 	m_service->Start(argc, argv);

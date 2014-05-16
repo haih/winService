@@ -32,12 +32,8 @@ public:
 	void Shutdown();
 
 	//由子类具体实现
-	virtual void OnStart(DWORD argc, TCHAR* argv[])
-	{
-		 	ofstream ofile;               //定义输出文件
-    		ofile.open("d:\\myfile.txt");     //作为输出文件打开
-    		ofile<<"123456"<<endl;
-	};
+	virtual void OnStart(DWORD argc, TCHAR* argv[]) = 0;
+
 	virtual void OnStop(){};
 	virtual void OnPause(){};
 	virtual void OnContinue(){};

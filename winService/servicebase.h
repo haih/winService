@@ -7,13 +7,17 @@
 #include <string>
 #include <fstream>
 #include <iostream>
-#include <iostream>
 using namespace std;
 
 class CServiceBase
 {
-public:
+public: 
 	CServiceBase();
+	CServiceBase(char* name,
+			 char* displayName,
+			 DWORD  dwServiceType,
+			 DWORD  dwStartType,
+			 DWORD  dwErrorCtrlType);
 	virtual ~CServiceBase();
 
 	// Called by windows when starting the service.
@@ -21,10 +25,9 @@ public:
 	{
 		return RunInternal(this);
 	}
-	void WriteToEventLog(const TCHAR* msg, WORD type); 
 	void SetStatus(DWORD dwState, DWORD dwErrCode = NO_ERROR, DWORD dwWait = 0);
 
-	void Start(DWORD argc, TCHAR* argv[]);
+	
 	static DWORD WINAPI Service(LPVOID lpvThread);
 	void Stop();
 	void Pause();
@@ -32,23 +35,19 @@ public:
 	void Shutdown();
 
 	//由子类具体实现
-	virtual void OnStart(DWORD argc, TCHAR* argv[]) = 0;
+	virtual void OnStart(DWORD dwArgc, TCHAR* pszArgv[]);
 
-	virtual void OnStop(){};
+	virtual void OnStop();
 	virtual void OnPause(){};
 	virtual void OnContinue(){};
 	virtual void OnShutdown(){};
 	char* GetName();
 	char* GetDisplayName();
 
-	CServiceBase(char* name,
-				 char* displayName,
-				 DWORD  dwServiceType,
-				 DWORD  dwStartType,
-				 DWORD  dwErrorCtrlType);
-protected:
+
 private:
 	// Registers handle and starts the service.
+	virtual void Start(DWORD argc, TCHAR* argv[]);
 	static void WINAPI SvcMain(DWORD argc, TCHAR* argv[]);
 
 	// Called whenever service control manager updates service status.
@@ -69,6 +68,9 @@ private:
 
 	static CServiceBase* m_service;
 
+	static HANDLE m_thread;
+    static BOOL m_fStopping;
+    HANDLE m_hStoppedEvent;
 	DISALLOW_COPY_AND_ASSIGN(CServiceBase);
 };
 

@@ -18,7 +18,6 @@ void CTimerService::OnStart(DWORD argc, TCHAR* argv[])
 		LOG(INFO) <<"CTimerService::OnStart "<<i<<" 现在时间是 "<<sysTime.wYear<<sysTime.wMonth<<sysTime.wDay<<endl;
 		Sleep(1000);
 	}
-	//MessageBox(str,NULL,MB_OK);
 }
 
 void CTimerService::OnStop()

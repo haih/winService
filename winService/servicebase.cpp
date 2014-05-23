@@ -1,6 +1,8 @@
 #include "servicebase.h"
 
 CServiceBase* CServiceBase::m_service = NULL;
+HANDLE CServiceBase::m_thread = NULL;
+BOOL CServiceBase::m_fStopping = false;
 
 CServiceBase::CServiceBase( char* name = "ServiceBase",
 							char* displayName = "ServiceBase",
@@ -8,7 +10,7 @@ CServiceBase::CServiceBase( char* name = "ServiceBase",
 							DWORD  dwStartType = SERVICE_DEMAND_START,
 							DWORD  dwErrorCtrlType = SERVICE_ERROR_NORMAL)
 {
-	//LOG(INFO) << "CServiceBase Constructor~ The Service Name = " << name <<endl;    
+	cout<< "CServiceBase Constructor~ The Service Name = " << name <<endl;    
 	m_name = name;
 	m_displayName = displayName;
 	m_serviceType = dwServiceType;
@@ -27,7 +29,7 @@ CServiceBase::CServiceBase( char* name = "ServiceBase",
 
 CServiceBase::CServiceBase()
 {
-	//LOG(INFO) << "CServiceBase Constructor~ The Service Name = " <<"ServiceBase"<<endl;   
+	cout<< "CServiceBase Constructor~ The Service Name = " <<"ServiceBase"<<endl;   
 	m_name = "ServiceBase";
 	m_displayName = "ServiceBase";
 	m_serviceType = SERVICE_WIN32_OWN_PROCESS;
@@ -36,7 +38,7 @@ CServiceBase::CServiceBase()
 
 	m_svcStatus.dwServiceType	= SERVICE_WIN32;
 	m_svcStatus.dwCurrentState  = SERVICE_START_PENDING;
-	m_svcStatus.dwControlsAccepted = SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_PAUSE_CONTINUE;
+	m_svcStatus.dwControlsAccepted = SERVICE_ACCEPT_STOP;
 
 	m_svcStatus.dwServiceSpecificExitCode = 0;
 	m_svcStatus.dwWin32ExitCode = 0;
@@ -81,36 +83,29 @@ void CServiceBase::WriteToEventLog(const TCHAR* msg, WORD type)
 		}
 }
 #endif
+const char event1_name[] = "EventName1";
+
+
+void CServiceBase::OnStart(DWORD dwArgc, TCHAR* lpszArgv[])
+{
+	//具体实现在子类中
+	LOG(INFO) << "CServiceBase::OnStart~" <<endl;	 
+}
+
+
+void CServiceBase::OnStop()
+{
+	LOG(INFO) << "CServiceBase::OnStop~" <<endl;	 
+}
 void CServiceBase::Start(DWORD argc, TCHAR* argv[])
 {
-#if 0
-	HANDLE hThread;
+	LOG(INFO) << "CServiceBase::Start begin!" <<endl;    
 
-	//创建服务线程	服务完成的功能在这里调用
-	hThread = CreateThread(NULL,0,Service,NULL,0,NULL);
-	if(hThread == NULL)
-	{
-		 //CreateThread error!
-		 return;
-	}
-	CloseHandle(hThread);
-#endif
 //	SetStatus(SERVICE_START_PENDING);
 	OnStart(argc,argv);
 	SetStatus(SERVICE_RUNNING);
+	LOG(INFO) << "CServiceBase::Start end!" <<endl;	 
 	return;
-}
-DWORD WINAPI CServiceBase::Service(LPVOID lpvThread)
-{
-       //实现函数功能的地方
-	for(int i = 0;i < 100;i++)
-	{
-		ofstream ofile;               //定义输出文件
-		ofile.open("d:\\myfile.txt");     //作为输出文件打开
-		ofile<<i<<endl;
-		Sleep(2000);
-	}
-	return 1;
 }
 
 void CServiceBase::Stop()
@@ -144,19 +139,18 @@ BOOL  CServiceBase::RunInternal(CServiceBase* svc)
 {
 	m_service = svc;
 	char* svcName = m_service->GetName();
-	//char* m_name = new char[svcName.length() + 1];
-	//strcpy(m_name, svcName.c_str());
+	
+	LOG(INFO) << "CServiceBase::RunInternal~" <<endl;  
 
 	SERVICE_TABLE_ENTRY tableEntry[] = 
 	{
-		{svcName, SvcMain},
+		{svcName, (LPSERVICE_MAIN_FUNCTION)SvcMain},
 		{nullptr, nullptr}
 	};
 	int  success;
 	success = StartServiceCtrlDispatcher(tableEntry);
 	if(success == 0)
 	{
-
 		cout<<"StartServiceCtrlDispatcher Failed~ Error Code = "<<::GetLastError()<<endl;	
 	}	
 	return success;
@@ -164,10 +158,7 @@ BOOL  CServiceBase::RunInternal(CServiceBase* svc)
 
 void WINAPI CServiceBase::SvcMain(DWORD argc, TCHAR* argv[])
 {
-	#if 1
-//	SERVICE_STATUS  ServiceStatus;
-//	ServiceStatus = m_service.m_svcStatus;
-	
+
 	if(m_service == NULL)
 	{                               
 		LOG(INFO) << "CServiceBase::SvcMain: service is not available!" <<endl;    
@@ -179,24 +170,26 @@ void WINAPI CServiceBase::SvcMain(DWORD argc, TCHAR* argv[])
 	{
 		LOG(INFO) << "CServiceBase::SvcMain: service Status Handler is not available!" <<endl;  
 	}
-	#endif
+
+	LOG(INFO) << "CServiceBase::Service begin! name = "<<m_service->GetName()<<endl;  
+
 	m_service->Start(argc, argv);
+	return ;
 }
 
 DWORD WINAPI CServiceBase::ServiceCtrlHandler(DWORD ctrlCode, DWORD evtType,
 	void* evtData, void* context)
 {
+	LOG(INFO)<<"ServiceCtrlHandler Begin~ service name = "<<m_service->GetName()<<endl;
+	switch (ctrlCode)
 	{
-		switch (ctrlCode)
-		{
-		case SERVICE_CONTROL_STOP: m_service->Stop(); break;
-		case SERVICE_CONTROL_PAUSE: m_service->Pause(); break;
-		case SERVICE_CONTROL_CONTINUE: m_service->Continue(); break;
-		case SERVICE_CONTROL_SHUTDOWN: m_service->Shutdown(); break;
-		case SERVICE_CONTROL_INTERROGATE: break;
-		default: 
-			break;
-		}
+	case SERVICE_CONTROL_STOP: m_service->Stop(); break;
+	case SERVICE_CONTROL_PAUSE: m_service->Pause(); break;
+	case SERVICE_CONTROL_CONTINUE: m_service->Continue(); break;
+	case SERVICE_CONTROL_SHUTDOWN: m_service->Shutdown(); break;
+	case SERVICE_CONTROL_INTERROGATE: break;
+	default: 
+		break;
 	}
 	return 0;
 }

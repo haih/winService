@@ -1,4 +1,5 @@
 #include "serviceInstall.h"
+#include "serviceImp.h"
 #include "timerSvc.h"
 
 void LogInit(int argc, TCHAR* argv[])
@@ -14,15 +15,14 @@ void LogInit(int argc, TCHAR* argv[])
 
 int main(int argc, TCHAR* argv[])
 {
-	// Initialize Google's logging library.    
-	
-	CTimerService* TimeService = new CTimerService();
+	CServiceBase* svcImpl = new CWindowsServiceImpl();
+
 	if (argc > 1)
 	{
 		if (strcmp(argv[1], TEXT("install")) == 0) 
 		{
-			cout<<"Installing service\n"<<endl;
-			if (!CServiceInstaller::Installer(TimeService)) 
+			cout<<"Installing service...\n"<<endl;
+			if (!CServiceInstaller::Installer(svcImpl)) 
 			{
 				cout<<"Couldn't install service: "<<::GetLastError()<<endl;
 				return -1;
@@ -33,7 +33,7 @@ int main(int argc, TCHAR* argv[])
 		if (strcmp(argv[1], TEXT("uninstall")) == 0) 
 		{
 			cout<<"Uninstall service\n"<<endl;
-			if (!CServiceInstaller::Uninstall(TimeService)) 
+			if (!CServiceInstaller::Uninstall(svcImpl)) 
 			{
 				cout<<"Couldn't Uninstall service: "<<::GetLastError()<<endl;
 				return -1;
@@ -42,8 +42,12 @@ int main(int argc, TCHAR* argv[])
 			return 0;
 		}		
 	}
-	LogInit(argc,argv);
-	TimeService->Run();
-	system("pause");
+	LogInit(argc,argv); //glog initialize
+	svcImpl->Run();
+	if(NULL != svcImpl)
+	{
+		delete svcImpl;
+		svcImpl = NULL;
+	}
 	return 0;
 }

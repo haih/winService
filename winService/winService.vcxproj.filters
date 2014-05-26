@@ -27,6 +27,12 @@
     <ClCompile Include="serviceInstall.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="serviceImp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="workthread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="copyDisable.h">
@@ -55,6 +61,15 @@
     </ClInclude>
     <ClInclude Include="..\glog\vlog_is_on.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="serviceImp.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="define.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="workthread.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

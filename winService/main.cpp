@@ -1,6 +1,7 @@
 #include "serviceInstall.h"
 #include "serviceImp.h"
 #include "timerSvc.h"
+#include <conio.h>
 
 void LogInit(int argc, TCHAR* argv[])
 {

@@ -78,8 +78,10 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="servicebase.cpp" />
+    <ClCompile Include="serviceImp.cpp" />
     <ClCompile Include="serviceInstall.cpp" />
     <ClCompile Include="timerSvc.cpp" />
+    <ClCompile Include="workthread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\glog\logging.h" />
@@ -88,9 +90,12 @@
     <ClInclude Include="..\glog\stl_logging.h" />
     <ClInclude Include="..\glog\vlog_is_on.h" />
     <ClInclude Include="copyDisable.h" />
+    <ClInclude Include="define.h" />
     <ClInclude Include="servicebase.h" />
+    <ClInclude Include="serviceImp.h" />
     <ClInclude Include="serviceInstall.h" />
     <ClInclude Include="timerSvc.h" />
+    <ClInclude Include="workthread.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

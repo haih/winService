@@ -1,92 +1,86 @@
-#pragma region Includes
-#include "serviceImp.h"
 #include "workthread.h"
 
-#pragma endregion
 
-
-#define BUFFER_SIZE		4096 // 4K bytes
-
-
-//HANDLE CWindowsServiceImplm_hStoppedEvent = NULL;
-
-CWindowsServiceImpl::CWindowsServiceImpl():CServiceBase( TEXT("IPCService"),
-	TEXT("IPCService"),
-	SERVICE_WIN32_OWN_PROCESS,
-	SERVICE_DEMAND_START,
-	SERVICE_ERROR_NORMAL)
+CWorkThread::CWorkThread()
+	: m_Tid(0)
+	, m_Handle(INVALID_HANDLE_VALUE)
+	, m_bStopFlag(FALSE)
 {
-	 cout<<"CWindowsServiceImpl Constructor!"<<endl;       
 }
 
-
-CWindowsServiceImpl::~CWindowsServiceImpl(void)
+CWorkThread::~CWorkThread()
 {
-	if (m_hStoppedEvent)
-    {
-        CloseHandle(m_hStoppedEvent);
-        m_hStoppedEvent = NULL;
-    }
+	CloseHandle(m_Handle);
 }
 
-void CWindowsServiceImpl::Start(DWORD argc, TCHAR* argv[])
+THREAD_ID CWorkThread::GetThreadId()
 {
-	LOG(INFO) << "CWindowsServiceImpl::Start begin!" <<endl;    
-
-//	SetStatus(SERVICE_START_PENDING);
-	OnStart(argc,argv);
-	SetStatus(SERVICE_RUNNING);
-	LOG(INFO) << "CWindowsServiceImpl::Start end!" <<endl;	 
-	return;
+	return m_Tid;
 }
 
-void CWindowsServiceImpl::OnStart(DWORD dwArgc, TCHAR *lpszArgv[])
+THREAD_HANDLE CWorkThread::GetThreadHandle()
 {
-    // Log a service start message to the Application log.
-     LOG(INFO) <<"WindowsService in OnStart"<<endl;
+	return m_Handle;
+}
 
-	 m_hStoppedEvent = CreateEvent(  NULL,    // default security attributes
-			                         TRUE,    // manual reset event
-			                         FALSE,   // not signaled
-			                         NULL);
-	if(NULL == m_hStoppedEvent)
+void CWorkThread::Terminate()
+{
+	CloseHandle(this->GetThreadHandle());
+	m_bStopFlag = TRUE;
+}
+
+RESULT CWorkThread::Create()
+{
+	m_Handle = (HANDLE)::_beginthreadex(
+			NULL,
+			0,
+			ThreadProc,
+			this,
+			0,
+			(unsigned int *)(&m_Tid));
+		if (m_Handle == 0) 
+		{
+			LOG(INFO)<<"CWorkThread::Create, _beginthreadex() failed! err="<<GetLastError();
+			return RET_ERR;
+		} 
+
+}
+RESULT CWorkThread::Destory(RESULT aReason)
+{
+	LOG(INFO)<<"CWorkThread::Destory, Reason = "<<aReason;
+	delete this;
+	return RET_OK;		
+}
+
+RESULT CWorkThread::Join()
+{
+	if(NULL == m_Handle)
 	{
-		SetStatus(SERVICE_STOPPED,NO_ERROR,0);
-		return;
+		LOG(INFO)<<"CWorkThread::Join, invailed thread~ ";
+		return RET_ERR;
 	}
-	SetStatus(SERVICE_RUNNING,NO_ERROR,0); 
-	
-	CWorkThread* pWorkThread = new CWorkThread();
-	pWorkThread->Create();
-	
-//	pWorkThread->SetStop();
-	pWorkThread->Join();
-	
-	delete pWorkThread;
+	if(GetStopFlag())
+	{
+		LOG(INFO)<<"CWorkThread::Join, thread has stopped normally";
+		Sleep(10);
+		return RET_OK;
+	}
 
-	while(1)
-    {
-        // Check whether to stop the service.
-        WaitForSingleObject(m_hStoppedEvent, INFINITE);
-
-        SetStatus(SERVICE_STOPPED,NO_ERROR,0);
-		return;
-    }
-
-    // Queue the main service function for execution in a worker thread.
-//    CThreadPool::QueueUserWorkItem(&CWindowsServiceImpl::ServiceWorkerThread, this);
+	DWORD dwRet = ::WaitForSingleObject(m_Handle,INFINITE);
+	if (dwRet == WAIT_OBJECT_0)
+	{
+		return RET_OK;
+	}
+	else 
+	{
+		LOG(INFO)<<"CWorkThread::Join, WaitForSingleObject() failed! err=" << ::GetLastError();
+		return RET_ERR;
+	}
 }
-void CWindowsServiceImpl::OnStop()
-{
-	// Log a service stop message to the Application log.
-	LOG(INFO) <<"CWindowsServiceImpl in OnStop "<<endl;//CreateThread error!
 
-	SetStatus(SERVICE_STOPPED,NO_ERROR,0);
-}
-#if 0
-HANDLE CWindowsServiceImpl::OnThreadInit()
+RESULT CWorkThread::OnThreadInit()
 {
-	LOG(INFO)<<"CWindowsServiceImpl NamedPipeInit Begin~"<<endl;
+	LOG(INFO)<<"CWorkThread::OnThreadInit() Begin~"<<endl;
 
 	LPTSTR lpszPipename = TEXT("\\\\.\\pipe\\haihu_pipe"); 
 	//security attribute setting begin
@@ -102,7 +96,7 @@ HANDLE CWindowsServiceImpl::OnThreadInit()
 	//security attribute setting end
 
 	// Create the named pipe.
-	HANDLE hPipe = CreateNamedPipe(
+	m_PipeHandle = CreateNamedPipe(
 		lpszPipename,				// The unique pipe name. This string must 
 		// have the form of \\.\pipe\pipename
 		PIPE_ACCESS_DUPLEX, 		// The pipe is bi-directional; both  
@@ -127,29 +121,28 @@ HANDLE CWindowsServiceImpl::OnThreadInit()
 		NMPWAIT_USE_DEFAULT_WAIT,	// Time-out interval
 		&sa 						// Security attributes
 		);
-	if(INVALID_HANDLE_VALUE == hPipe)
+	if(INVALID_HANDLE_VALUE == m_PipeHandle)
 	{
 		LOG(INFO)<<"Can not create the named pipe "<<lpszPipename<<"Error = "<<GetLastError()<<endl;
-		return NULL;
+		return RET_ERR;
 	}
 
 	LOG(INFO)<<"The named pipe "<<lpszPipename<<" is created.\n";
 
 	//wait for the client connection
 	LOG(INFO)<<"wait for the client connection... ";
-	BOOL bConnected = ConnectNamedPipe(hPipe, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED); 
+	BOOL bConnected = ConnectNamedPipe(m_PipeHandle, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED); 
 
 	if (!bConnected)
 	{
 		LOG(INFO)<<"Error occurred while connecting to the client,GetLastError = "<<GetLastError(); 
-		CloseHandle(hPipe);
-		return NULL;
+		CloseHandle(m_PipeHandle);
+		return RET_ERR;
 	}
-	return hPipe;
-	
-}
+	return RET_OK;
 
-unsigned CWindowsServiceImpl::OnThreadRun(HANDLE hPipe)
+}
+RESULT CWorkThread::OnThreadRun()
 {
 	/////////////////////////////////////////////////////////////////////////
 	// Read client requests from the pipe and write the response.
@@ -170,7 +163,7 @@ unsigned CWindowsServiceImpl::OnThreadRun(HANDLE hPipe)
 
 		ReadBufferSize = sizeof(TCHAR) * BUFFER_SIZE;
 		bResult = ReadFile( 		// Read from the pipe.
-			hPipe,					// Handle of the pipe
+			m_PipeHandle,					// Handle of the pipe
 			ReadBuffer, 			// Buffer to receive data
 			ReadBufferSize, 		// Size of buffer in bytes
 			&ReadDataSize,			// Number of bytes read
@@ -187,15 +180,15 @@ unsigned CWindowsServiceImpl::OnThreadRun(HANDLE hPipe)
 
 		if((WriteBuffer.length() + 1) > BUFFER_SIZE)
 		{
-			LOG(INFO)<<"response message is too large to send~";
-			return -1;
+			LOG(INFO)<<"Response message is too large to send~";
+			return RET_ERR;
 		}
 		WriteToBufferSize = sizeof(TCHAR) * (WriteBuffer.length()+1);
 		LOG(INFO)<<"WriteToBufferSize = "<<WriteToBufferSize<<endl;
 		// Write the response to the pipe.
 
 		bResult = WriteFile(		// Write to the pipe.
-			hPipe,					// Handle of the pipe
+			m_PipeHandle,					// Handle of the pipe
 			WriteBuffer.c_str(),		// Buffer to write to 
 			WriteToBufferSize,			// Number of bytes to write 
 			&WrittenDataSize,		// Number of bytes written 
@@ -211,32 +204,26 @@ unsigned CWindowsServiceImpl::OnThreadRun(HANDLE hPipe)
 		Sleep(200);
 	}
 
-	FlushFileBuffers(hPipe); 
-	DisconnectNamedPipe(hPipe); 
-	CloseHandle(hPipe);
-	return 0;
+	FlushFileBuffers(m_PipeHandle); 
+	DisconnectNamedPipe(m_PipeHandle); 
+	CloseHandle(m_PipeHandle);
+	return RET_OK;
+
 }
 
-
-unsigned WINAPI CWindowsServiceImpl::ThreadProc(PVOID context)
+unsigned WINAPI CWorkThread::ThreadProc(void *aPara)
 {
-	ASSERT_RET(context,NULL);
-	HANDLE hPipe = OnThreadInit();
-	if(NULL == hPipe)
-	{
-		LOG(INFO) <<"CWindowsServiceImpl in ThreadProc~ pipe init failed!"<<endl;//CreateThread error!
-		return -1;
-	}
-	OnThreadRun(hPipe);
-	return 0;
+	CWorkThread *pThread = static_cast<CWorkThread *>(aPara);
+	ASSERT_RET(pThread, NULL);
+
+	pThread->OnThreadInit();
+
+	pThread->OnThreadRun();
+
+	pThread->SetStop();
+	
+	delete pThread;
+
+	return NULL;
 }
 
-void CWindowsServiceImpl::OnStop()
-{
-    // Log a service stop message to the Application log.
-	LOG(INFO) <<"CWindowsServiceImpl in OnStop "<<endl;//CreateThread error!
-
-  	SetEvent(m_hStoppedEvent);
-	SetStatus(SERVICE_STOPPED,NO_ERROR,0);
-}
-#endif

@@ -58,7 +58,7 @@ public:
 
 private:
 	static unsigned WINAPI ThreadProc(void *aPara);
-
+	DISALLOW_COPY_AND_ASSIGN(CWorkThread);
 
 protected:
 	THREAD_ID m_tid;

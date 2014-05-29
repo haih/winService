@@ -2,25 +2,25 @@
 
 
 CWorkThread::CWorkThread()
-	: m_Tid(0)
-	, m_Handle(INVALID_HANDLE_VALUE)
+	: m_tid(0)
+	, m_handle(INVALID_HANDLE_VALUE)
 	, m_bStopFlag(FALSE)
 {
 }
 
 CWorkThread::~CWorkThread()
 {
-	CloseHandle(m_Handle);
+	CloseHandle(m_handle);
 }
 
 THREAD_ID CWorkThread::GetThreadId()
 {
-	return m_Tid;
+	return m_tid;
 }
 
 THREAD_HANDLE CWorkThread::GetThreadHandle()
 {
-	return m_Handle;
+	return m_handle;
 }
 
 void CWorkThread::Terminate()
@@ -31,14 +31,14 @@ void CWorkThread::Terminate()
 
 RESULT CWorkThread::Create()
 {
-	m_Handle = (HANDLE)::_beginthreadex(
+	m_handle = (HANDLE)::_beginthreadex(
 			NULL,
 			0,
 			ThreadProc,
 			this,
 			0,
-			(unsigned int *)(&m_Tid));
-		if (m_Handle == 0) 
+			(unsigned int *)(&m_tid));
+		if (m_handle == 0) 
 		{
 			LOG(INFO)<<"CWorkThread::Create, _beginthreadex() failed! err="<<GetLastError();
 			return RET_ERR;
@@ -54,7 +54,7 @@ RESULT CWorkThread::Destory(RESULT aReason)
 
 RESULT CWorkThread::Join()
 {
-	if(NULL == m_Handle)
+	if(NULL == m_handle)
 	{
 		LOG(INFO)<<"CWorkThread::Join, invailed thread~ ";
 		return RET_ERR;
@@ -66,7 +66,7 @@ RESULT CWorkThread::Join()
 		return RET_OK;
 	}
 
-	DWORD dwRet = ::WaitForSingleObject(m_Handle,INFINITE);
+	DWORD dwRet = ::WaitForSingleObject(m_handle,INFINITE);
 	if (dwRet == WAIT_OBJECT_0)
 	{
 		return RET_OK;
@@ -96,7 +96,7 @@ RESULT CWorkThread::OnThreadInit()
 	//security attribute setting end
 
 	// Create the named pipe.
-	m_PipeHandle = CreateNamedPipe(
+	m_pipe_handle = CreateNamedPipe(
 		lpszPipename,				// The unique pipe name. This string must 
 		// have the form of \\.\pipe\pipename
 		PIPE_ACCESS_DUPLEX, 		// The pipe is bi-directional; both  
@@ -121,7 +121,7 @@ RESULT CWorkThread::OnThreadInit()
 		NMPWAIT_USE_DEFAULT_WAIT,	// Time-out interval
 		&sa 						// Security attributes
 		);
-	if(INVALID_HANDLE_VALUE == m_PipeHandle)
+	if(INVALID_HANDLE_VALUE == m_pipe_handle)
 	{
 		LOG(INFO)<<"Can not create the named pipe "<<lpszPipename<<"Error = "<<GetLastError()<<endl;
 		return RET_ERR;
@@ -131,12 +131,12 @@ RESULT CWorkThread::OnThreadInit()
 
 	//wait for the client connection
 	LOG(INFO)<<"wait for the client connection... ";
-	BOOL bConnected = ConnectNamedPipe(m_PipeHandle, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED); 
+	BOOL bConnected = ConnectNamedPipe(m_pipe_handle, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED); 
 
 	if (!bConnected)
 	{
 		LOG(INFO)<<"Error occurred while connecting to the client,GetLastError = "<<GetLastError(); 
-		CloseHandle(m_PipeHandle);
+		CloseHandle(m_pipe_handle);
 		return RET_ERR;
 	}
 	return RET_OK;
@@ -163,7 +163,7 @@ RESULT CWorkThread::OnThreadRun()
 
 		ReadBufferSize = sizeof(TCHAR) * BUFFER_SIZE;
 		bResult = ReadFile( 		// Read from the pipe.
-			m_PipeHandle,					// Handle of the pipe
+			m_pipe_handle,					// Handle of the pipe
 			ReadBuffer, 			// Buffer to receive data
 			ReadBufferSize, 		// Size of buffer in bytes
 			&ReadDataSize,			// Number of bytes read
@@ -174,6 +174,10 @@ RESULT CWorkThread::OnThreadRun()
 			LOG(INFO)<<"Receive Data error!"<<endl;
 			break;
 		}
+		
+		//TODO Message Handler
+		msg_queue.push_back(ReadBuffer);
+
 		LOG(INFO)<<"Received "<<ReadDataSize<<" bytes"<<" Message = "<<ReadBuffer<<endl;
 
 		// Prepare the response.
@@ -186,9 +190,9 @@ RESULT CWorkThread::OnThreadRun()
 		WriteToBufferSize = sizeof(TCHAR) * (WriteBuffer.length()+1);
 		LOG(INFO)<<"WriteToBufferSize = "<<WriteToBufferSize<<endl;
 		// Write the response to the pipe.
-
+		
 		bResult = WriteFile(		// Write to the pipe.
-			m_PipeHandle,					// Handle of the pipe
+			m_pipe_handle,					// Handle of the pipe
 			WriteBuffer.c_str(),		// Buffer to write to 
 			WriteToBufferSize,			// Number of bytes to write 
 			&WrittenDataSize,		// Number of bytes written 
@@ -204,9 +208,9 @@ RESULT CWorkThread::OnThreadRun()
 		Sleep(200);
 	}
 
-	FlushFileBuffers(m_PipeHandle); 
-	DisconnectNamedPipe(m_PipeHandle); 
-	CloseHandle(m_PipeHandle);
+	FlushFileBuffers(m_pipe_handle); 
+	DisconnectNamedPipe(m_pipe_handle); 
+	CloseHandle(m_pipe_handle);
 	return RET_OK;
 
 }

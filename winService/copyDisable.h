@@ -1,6 +1,9 @@
 #ifndef COPY_DISABLER_H_
 #define COPY_DISABLER_H_
 
+
+#include "define.h"
+
 #if 0
 #define DISABLE_COPY(Type)\
 	Type(const Type&) = delete;\

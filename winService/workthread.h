@@ -61,13 +61,15 @@ private:
 
 
 protected:
-	THREAD_ID m_Tid;
-	THREAD_HANDLE m_Handle;
-	PIPE_HANDLE m_PipeHandle;
+	THREAD_ID m_tid;
+	THREAD_HANDLE m_handle;
+	PIPE_HANDLE m_pipe_handle;
 
 private:
 	BOOL m_bStopFlag;
-	
+	typedef std::list<TCHAR *> MESSAGE_QUEUE;
+	MESSAGE_QUEUE msg_queue;
+	MESSAGE_QUEUE::iterator m_iter;
 };
 
 #endif // !WORKTHREAD_H

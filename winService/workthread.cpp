@@ -1,218 +1,29 @@
 #include "workthread.h"
 
-
-CWorkThread::CWorkThread()
-	: m_tid(0)
-	, m_handle(INVALID_HANDLE_VALUE)
-	, m_bStopFlag(FALSE)
+void CWorkThread::Run(void)
 {
-}
+    LOG(INFO)<< "CWorkThread::Run~ "<<endl;
+	CNamedPipe* client;
+	pipe_ = new CNamedPipe("haihu_pipe");
 
-CWorkThread::~CWorkThread()
-{
-	CloseHandle(m_handle);
-}
+    LOG(INFO)<< "CWorkThread::Run~ active_ = "<<active_<<endl;
+	while (!active_)
+	{
+		client = pipe_->WaitForConnection();
 
-THREAD_ID CWorkThread::GetThreadId()
-{
-	return m_tid;
-}
-
-THREAD_HANDLE CWorkThread::GetThreadHandle()
-{
-	return m_handle;
-}
-
-void CWorkThread::Terminate()
-{
-	CloseHandle(this->GetThreadHandle());
-	m_bStopFlag = TRUE;
-}
-
-RESULT CWorkThread::Create()
-{
-	m_handle = (HANDLE)::_beginthreadex(
-			NULL,
-			0,
-			ThreadProc,
-			this,
-			0,
-			(unsigned int *)(&m_tid));
-		if (m_handle == 0) 
+		if (NULL != client)
 		{
-			LOG(INFO)<<"CWorkThread::Create, _beginthreadex() failed! err="<<GetLastError();
-			return RET_ERR;
-		} 
-
-}
-RESULT CWorkThread::Destory(RESULT aReason)
-{
-	LOG(INFO)<<"CWorkThread::Destory, Reason = "<<aReason;
-	delete this;
-	return RET_OK;		
-}
-
-RESULT CWorkThread::Join()
-{
-	if(NULL == m_handle)
-	{
-		LOG(INFO)<<"CWorkThread::Join, invailed thread~ ";
-		return RET_ERR;
-	}
-	if(GetStopFlag())
-	{
-		LOG(INFO)<<"CWorkThread::Join, thread has stopped normally";
-		Sleep(10);
-		return RET_OK;
-	}
-
-	DWORD dwRet = ::WaitForSingleObject(m_handle,INFINITE);
-	if (dwRet == WAIT_OBJECT_0)
-	{
-		return RET_OK;
-	}
-	else 
-	{
-		LOG(INFO)<<"CWorkThread::Join, WaitForSingleObject() failed! err=" << ::GetLastError();
-		return RET_ERR;
-	}
-}
-
-RESULT CWorkThread::OnThreadInit()
-{
-	LOG(INFO)<<"CWorkThread::OnThreadInit() Begin~"<<endl;
-
-	LPTSTR lpszPipename = TEXT("\\\\.\\pipe\\haihu_pipe"); 
-	//security attribute setting begin
-	SECURITY_ATTRIBUTES sa;
-	sa.lpSecurityDescriptor = (PSECURITY_DESCRIPTOR)malloc(
-		SECURITY_DESCRIPTOR_MIN_LENGTH);
-	InitializeSecurityDescriptor(sa.lpSecurityDescriptor, 
-		SECURITY_DESCRIPTOR_REVISION);
-	// ACL is set as NULL in order to allow all access to the object.
-	SetSecurityDescriptorDacl(sa.lpSecurityDescriptor, TRUE, NULL, FALSE);
-	sa.nLength = sizeof(sa);
-	sa.bInheritHandle = TRUE;
-	//security attribute setting end
-
-	// Create the named pipe.
-	m_pipe_handle = CreateNamedPipe(
-		lpszPipename,				// The unique pipe name. This string must 
-		// have the form of \\.\pipe\pipename
-		PIPE_ACCESS_DUPLEX, 		// The pipe is bi-directional; both  
-		// server and client processes can read 
-		// from and write to the pipe
-		PIPE_TYPE_MESSAGE | 		// Message type pipe 
-		PIPE_READMODE_MESSAGE | 	// Message-read mode 
-		PIPE_WAIT,					// Blocking mode is enabled
-		PIPE_UNLIMITED_INSTANCES,	// Max. instances
-
-		// These two buffer sizes have nothing to do with the buffers that 
-		// are used to read from or write to the messages. The input and 
-		// output buffer sizes are advisory. The actual buffer size reserved 
-		// for each end of the named pipe is either the system default, the 
-		// system minimum or maximum, or the specified size rounded up to the 
-		// next allocation boundary. The buffer size specified should be 
-		// small enough that your process will not run out of nonpaged pool, 
-		// but large enough to accommodate typical requests.
-		BUFFER_SIZE,				// Output buffer size in bytes
-		BUFFER_SIZE,				// Input buffer size in bytes
-
-		NMPWAIT_USE_DEFAULT_WAIT,	// Time-out interval
-		&sa 						// Security attributes
-		);
-	if(INVALID_HANDLE_VALUE == m_pipe_handle)
-	{
-		LOG(INFO)<<"Can not create the named pipe "<<lpszPipename<<"Error = "<<GetLastError()<<endl;
-		return RET_ERR;
-	}
-
-	LOG(INFO)<<"The named pipe "<<lpszPipename<<" is created.\n";
-
-	//wait for the client connection
-	LOG(INFO)<<"wait for the client connection... ";
-	BOOL bConnected = ConnectNamedPipe(m_pipe_handle, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED); 
-
-	if (!bConnected)
-	{
-		LOG(INFO)<<"Error occurred while connecting to the client,GetLastError = "<<GetLastError(); 
-		CloseHandle(m_pipe_handle);
-		return RET_ERR;
-	}
-	return RET_OK;
-
-}
-RESULT CWorkThread::OnThreadRun()
-{
-	/////////////////////////////////////////////////////////////////////////
-	// Read client requests from the pipe and write the response.
-	//
-	TCHAR ReadBuffer[BUFFER_SIZE] = {0};
-	DWORD ReadBufferSize = 0;
-	DWORD ReadDataSize = 0;
-
-	string WriteBuffer = "response from server to client " ;
-	DWORD WriteToBufferSize = 0;
-	DWORD WrittenDataSize = 0;
-
-	BOOL bResult;
-
-	while (TRUE)
-	{
-		// Receive one message from the pipe.
-
-		ReadBufferSize = sizeof(TCHAR) * BUFFER_SIZE;
-		bResult = ReadFile( 		// Read from the pipe.
-			m_pipe_handle,					// Handle of the pipe
-			ReadBuffer, 			// Buffer to receive data
-			ReadBufferSize, 		// Size of buffer in bytes
-			&ReadDataSize,			// Number of bytes read
-			NULL);					// Not overlapped I/O
-
-		if (!bResult/*Failed*/ || ReadDataSize == 0/*Finished*/) 
-		{
-			LOG(INFO)<<"Receive Data error!"<<endl;
-			break;
+		    HandleClient(client);
 		}
-		
-		//TODO Message Handler
-		msg_queue.push_back(ReadBuffer);
-
-		LOG(INFO)<<"Received "<<ReadDataSize<<" bytes"<<" Message = "<<ReadBuffer<<endl;
-
-		// Prepare the response.
-
-		if((WriteBuffer.length() + 1) > BUFFER_SIZE)
+		else
 		{
-			LOG(INFO)<<"Response message is too large to send~";
-			return RET_ERR;
+			//LOG(INFO)<< "CWorkThread::Run wait for connection failed!"<<endl;
 		}
-		WriteToBufferSize = sizeof(TCHAR) * (WriteBuffer.length()+1);
-		LOG(INFO)<<"WriteToBufferSize = "<<WriteToBufferSize<<endl;
-		// Write the response to the pipe.
-		
-		bResult = WriteFile(		// Write to the pipe.
-			m_pipe_handle,					// Handle of the pipe
-			WriteBuffer.c_str(),		// Buffer to write to 
-			WriteToBufferSize,			// Number of bytes to write 
-			&WrittenDataSize,		// Number of bytes written 
-			NULL);					// Not overlapped I/O 
-
-		if(!bResult)
-		{
-			LOG(INFO)<<"WriteFile Data error!"<<endl;
-			break;
-		}
-
-		LOG(INFO)<<"Send "<<WrittenDataSize<<" bytes"<<" Message = "<<WriteBuffer<<endl;
-		Sleep(200);
+		Sleep(20);
 	}
-
-	FlushFileBuffers(m_pipe_handle); 
-	DisconnectNamedPipe(m_pipe_handle); 
-	CloseHandle(m_pipe_handle);
-	return RET_OK;
-
+    client->Close();
+	delete pipe_;
+	pipe_ = NULL;
 }
 
 unsigned WINAPI CWorkThread::ThreadProc(void *aPara)
@@ -220,14 +31,109 @@ unsigned WINAPI CWorkThread::ThreadProc(void *aPara)
 	CWorkThread *pThread = static_cast<CWorkThread *>(aPara);
 	ASSERT_RET(pThread, NULL);
 
-	pThread->OnThreadInit();
+	pThread->Run();
 
-	pThread->OnThreadRun();
-
-	pThread->SetStop();
+	//pThread->SetStop();
 	
 	delete pThread;
 
 	return NULL;
 }
+void CWorkThread::Start(void)
+{
+    LOG(INFO)<<"CWorkThread::Start~ ";
+	active_ = true;
+	Create();
+}
+void CWorkThread::Create(void)
+{
+    LOG(INFO)<<"CWorkThread::Create~ ";
+	m_handle_ = (HANDLE)::_beginthreadex(
+			NULL,
+			0,
+			ThreadProc,
+			this,
+			0,
+			(unsigned int *)(&m_tid_));
+	
+		if (m_handle_ == 0) 
+		{
+			LOG(INFO)<<"CWorkThread::Create, _beginthreadex() failed! err="<<GetLastError();
+			//return RET_ERR;
+		} 
+}
+
+void CWorkThread::Stop(void)
+{
+    LOG(INFO)<<"CWorkThread::Stop~ ";
+	active_ = false;
+	this->Join();
+}
+
+void CWorkThread::Join(void)
+{
+	if (NULL == m_handle_)
+	{
+		LOG(INFO)<<"CWorkThread::Join, invailed thread~ ";
+		//return RET_ERR;
+	}
+	
+	//if (GetStopFlag())
+	//{
+	//	LOG(INFO)<<"CWorkThread::Join, thread has stopped normally";
+	//	Sleep(10);
+	//	return RET_OK;
+	//}
+
+	DWORD dwRet = ::WaitForSingleObject(m_handle_,INFINITE);
+	if (dwRet == WAIT_OBJECT_0)
+	{
+		//return RET_OK;
+	}
+	else 
+	{
+		LOG(INFO)<<"CWorkThread::Join, WaitForSingleObject() failed! err=" << ::GetLastError();
+		//return RET_ERR;
+	}
+}
+
+CWorkThread::~CWorkThread(void)
+{
+	this->Stop();
+	delete pipe_;
+	pipe_ = NULL;
+}
+
+void CWorkThread::HandleClient(CNamedPipe* client)
+{
+    LOG(INFO)<<"CWorkThread::HandleClient~ ";
+    ASSERT_RET_VOID(client);
+    size_t size = 0;
+    
+    client->InternalReadBytes(&size,sizeof(size));
+    char* message = new char[size];
+    //char message[256] = {0};// = new char[size + 1];
+    //memset(message,'c',size);
+    
+    //LOG(INFO)<<"CWorkThread::HandleClient size = " << size;
+    
+    if (size > 0)
+    {
+        client->InternalReadBytes(message,size);
+        string msg(message,size);	
+		LOG(INFO)<<"Message from pipe: "<<msg;
+    }
+    
+    string server_res= "default response from server~";
+    size_t respone_size = server_res.size();
+    //client->InternalWriteBytes(&respone_size,sizeof(respone_size)+1);
+    client->InternalWriteBytes(server_res.c_str(),64);
+    
+    //Sleep(2000);
+    //client->Close();
+    
+    delete[] message;
+}
+
+
 

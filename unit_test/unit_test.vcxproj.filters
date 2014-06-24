@@ -15,67 +15,43 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="..\winService\serviceImp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="servicebase.cpp">
+    <ClCompile Include="..\winService\servicebase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="timerSvc.cpp">
+    <ClCompile Include="..\winService\workthread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="serviceImp.cpp">
+    <ClCompile Include="test_thread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="workthread.cpp">
+    <ClCompile Include="test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="service_manager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="named_pipe.cpp">
+    <ClCompile Include="..\winService\service_manager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="copyDisable.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="servicebase.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="timerSvc.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\glog\log_severity.h">
+    <ClInclude Include="..\winService\servicebase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\glog\logging.h">
+    <ClInclude Include="..\winService\serviceImp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\glog\raw_logging.h">
+    <ClInclude Include="..\winService\workthread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\glog\stl_logging.h">
+    <ClInclude Include="..\winService\copyDisable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\winService\define.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\winService\service_manager.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\glog\vlog_is_on.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="serviceImp.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="define.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="workthread.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="service_manager.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="named_pipe.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

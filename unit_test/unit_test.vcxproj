@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{536411F0-A36E-49AF-9220-913956930254}</ProjectGuid>
+    <ProjectGuid>{5EBE1D12-8D10-47C6-88AF-5A632555870E}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>winService</RootNamespace>
+    <RootNamespace>unit_test</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -39,7 +39,9 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>E:\Practise\VS2010\winService\glog;$(IncludePath)</IncludePath>
+    <IncludePath>E:\Practise\VS2010\winService\winService;E:\Practise\VS2010\winService\unit_test\include;$(IncludePath)</IncludePath>
+    <LibraryPath>E:\Practise\VS2010\winService\winService\Debug;E:\Practise\VS2010\winService\winService;E:\Practise\VS2010\winService\unit_test;$(LibraryPath)</LibraryPath>
+    <SourcePath>E:\Practise\VS2010\winService\winService;E:\Practise\VS2010\winService\winService\glog;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -51,11 +53,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalIncludeDirectories>E:\Practise\VS2010\winService\unit_test\include;E:\Practise\VS2010\winService\winService;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <UACExecutionLevel>AsInvoker</UACExecutionLevel>
+      <AdditionalDependencies>gtestd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>E:\Practise\VS2010\winService\winService;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -76,28 +81,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="named_pipe.cpp" />
-    <ClCompile Include="servicebase.cpp" />
-    <ClCompile Include="serviceImp.cpp" />
-    <ClCompile Include="service_manager.cpp" />
-    <ClCompile Include="timerSvc.cpp" />
-    <ClCompile Include="workthread.cpp" />
+    <ClCompile Include="..\winService\servicebase.cpp" />
+    <ClCompile Include="..\winService\serviceImp.cpp" />
+    <ClCompile Include="..\winService\service_manager.cpp" />
+    <ClCompile Include="..\winService\workthread.cpp" />
+    <ClCompile Include="test.cpp" />
+    <ClCompile Include="test_thread.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\glog\logging.h" />
-    <ClInclude Include="..\glog\log_severity.h" />
-    <ClInclude Include="..\glog\raw_logging.h" />
-    <ClInclude Include="..\glog\stl_logging.h" />
-    <ClInclude Include="..\glog\vlog_is_on.h" />
-    <ClInclude Include="copyDisable.h" />
-    <ClInclude Include="define.h" />
-    <ClInclude Include="named_pipe.h" />
-    <ClInclude Include="servicebase.h" />
-    <ClInclude Include="serviceImp.h" />
-    <ClInclude Include="service_manager.h" />
-    <ClInclude Include="timerSvc.h" />
-    <ClInclude Include="workthread.h" />
+    <ClInclude Include="..\winService\copyDisable.h" />
+    <ClInclude Include="..\winService\define.h" />
+    <ClInclude Include="..\winService\servicebase.h" />
+    <ClInclude Include="..\winService\serviceImp.h" />
+    <ClInclude Include="..\winService\service_manager.h" />
+    <ClInclude Include="..\winService\workthread.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

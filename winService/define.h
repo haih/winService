@@ -23,7 +23,7 @@ using namespace std;
 #define BUFFER_SIZE		4096 // 4K bytes
 
 
-#define ASSERT(expr)                {if (!(expr)){LOG(INFO)<<"assert  "<< #expr <<" failed"; assert(expr);} }
+#define ASSERT(expr)                {if (!(expr)){LOG(INFO)<<"assert "<< #expr <<" failed"; assert(expr);} }
 #define ASSERT_ERR(expr, errinfo)   {if (!(expr)){LOG(INFO)<<"assert "<<  #expr <<" failed"; return errinfo;} }
 #define ASSERT_RET(expr, args)      {if (!(expr)){LOG(INFO)<<"assert "<<  #expr <<" failed"; return args;   } }
 #define ASSERT_RET_VOID(expr)       {if (!(expr)){LOG(INFO)<<"assert "<<  #expr <<" failed"; return;   } }

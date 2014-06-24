@@ -93,9 +93,10 @@ void CServiceBase::OnStart(DWORD dwArgc, TCHAR* lpszArgv[])
 }
 
 
-void CServiceBase::OnStop()
+bool CServiceBase::OnStop()
 {
-	LOG(INFO) << "CServiceBase::OnStop~" <<endl;	 
+	LOG(INFO) << "CServiceBase::OnStop~" <<endl;
+	return true;
 }
 void CServiceBase::Start(DWORD argc, TCHAR* argv[])
 {
@@ -115,6 +116,7 @@ void CServiceBase::Stop()
 	SetStatus(SERVICE_STOPPED);
 }
 
+#if 0
 void CServiceBase::Pause()
 {
 	SetStatus(SERVICE_STOP_PENDING);
@@ -134,6 +136,7 @@ void CServiceBase::Shutdown()
 	OnShutdown();
 	SetStatus(SERVICE_STOPPED);
 }
+#endif
 
 BOOL  CServiceBase::RunInternal(CServiceBase* svc)
 {
@@ -184,9 +187,9 @@ DWORD WINAPI CServiceBase::ServiceCtrlHandler(DWORD ctrlCode, DWORD evtType,
 	switch (ctrlCode)
 	{
 	case SERVICE_CONTROL_STOP: m_service->Stop(); break;
-	case SERVICE_CONTROL_PAUSE: m_service->Pause(); break;
-	case SERVICE_CONTROL_CONTINUE: m_service->Continue(); break;
-	case SERVICE_CONTROL_SHUTDOWN: m_service->Shutdown(); break;
+//	case SERVICE_CONTROL_PAUSE: m_service->Pause(); break;
+//	case SERVICE_CONTROL_CONTINUE: m_service->Continue(); break;
+//	case SERVICE_CONTROL_SHUTDOWN: m_service->Shutdown(); break;
 	case SERVICE_CONTROL_INTERROGATE: break;
 	default: 
 		break;

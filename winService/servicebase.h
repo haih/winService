@@ -30,17 +30,17 @@ public:
 	
 	static DWORD WINAPI Service(LPVOID lpvThread);
 	void Stop();
-	void Pause();
-	void Continue();
-	void Shutdown();
+//	void Pause();
+//	void Continue();
+//	void Shutdown();
 
 	//由子类具体实现
 	virtual void OnStart(DWORD dwArgc, TCHAR* pszArgv[]);
 
-	virtual void OnStop();
-	virtual void OnPause(){};
-	virtual void OnContinue(){};
-	virtual void OnShutdown(){};
+	virtual bool OnStop();
+//	virtual void OnPause(){};
+//	virtual void OnContinue(){};
+//	virtual void OnShutdown(){};
 	char* GetName();
 	char* GetDisplayName();
 

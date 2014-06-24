@@ -4,6 +4,9 @@
 #include "servicebase.h"
 #include "define.h"
 
+class CServiceBase;
+
+
 //windows service impliment the ipc between server <---> client using named pipe
 class CWindowsServiceImpl : public CServiceBase
 {
@@ -13,7 +16,7 @@ public:
 	
 	~CWindowsServiceImpl(void);
 
-	
+	static CWindowsServiceImpl* GetInstance();
 
 	int OnRecvMsg();
 
@@ -22,7 +25,7 @@ public:
 protected:
 	virtual void OnStart(DWORD dwArgc, TCHAR* lpszArgv[]);
 	
-	virtual void OnStop();
+	virtual bool OnStop();
 	
 //	static HANDLE OnThreadInit();
 
@@ -31,7 +34,7 @@ protected:
 //	static unsigned WINAPI ThreadProc(PVOID context);
 
 private:
-
+	static CWindowsServiceImpl* s_ServiceImpl;
     HANDLE m_hStoppedEvent;
 };
 

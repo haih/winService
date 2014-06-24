@@ -1,4 +1,4 @@
-#pragma region Includes
+
 #include "serviceImp.h"
 #include "workthread.h"
 
@@ -9,6 +9,8 @@
 
 
 //HANDLE CWindowsServiceImplm_hStoppedEvent = NULL;
+
+CWindowsServiceImpl* CWindowsServiceImpl::s_ServiceImpl = NULL;
 
 CWindowsServiceImpl::CWindowsServiceImpl():CServiceBase( TEXT("IPCService"),
 	TEXT("IPCService"),
@@ -29,6 +31,23 @@ CWindowsServiceImpl::~CWindowsServiceImpl(void)
     }
 }
 
+CWindowsServiceImpl* CWindowsServiceImpl::GetInstance()
+{
+    if (!s_ServiceImpl)
+    {
+        s_ServiceImpl = new CWindowsServiceImpl();
+        cout<<"CWindowsServiceImpl Create CWindowsServiceImpl Instance~"<<endl;      
+    }
+    
+    else 
+    {
+        cout<<"CWindowsServiceImpl Create CWindowsServiceImpl Instance Error!"<<endl;
+        return NULL;
+    }
+    
+    return s_ServiceImpl;
+}
+
 void CWindowsServiceImpl::Start(DWORD argc, TCHAR* argv[])
 {
 	LOG(INFO) << "CWindowsServiceImpl::Start begin!" <<endl;    
@@ -43,7 +62,7 @@ void CWindowsServiceImpl::Start(DWORD argc, TCHAR* argv[])
 void CWindowsServiceImpl::OnStart(DWORD dwArgc, TCHAR *lpszArgv[])
 {
     // Log a service start message to the Application log.
-     LOG(INFO) <<"WindowsService in OnStart"<<endl;
+     LOG(INFO) <<"CWindowsServiceImpl OnStart"<<endl;
 
 	 m_hStoppedEvent = CreateEvent(  NULL,    // default security attributes
 			                         TRUE,    // manual reset event
@@ -56,11 +75,11 @@ void CWindowsServiceImpl::OnStart(DWORD dwArgc, TCHAR *lpszArgv[])
 	}
 	SetStatus(SERVICE_RUNNING,NO_ERROR,0); 
 	
-	CWorkThread* pWorkThread = new CWorkThread();
-	pWorkThread->Create();
+	CWorkThread* pWorkThread = new CWorkThread("IPCService");
+	pWorkThread->Start();
 	
 //	pWorkThread->SetStop();
-	pWorkThread->Join();
+	pWorkThread->Stop();
 	
 	delete pWorkThread;
 
@@ -76,13 +95,49 @@ void CWindowsServiceImpl::OnStart(DWORD dwArgc, TCHAR *lpszArgv[])
     // Queue the main service function for execution in a worker thread.
 //    CThreadPool::QueueUserWorkItem(&CWindowsServiceImpl::ServiceWorkerThread, this);
 }
-void CWindowsServiceImpl::OnStop()
-{
-	// Log a service stop message to the Application log.
-	LOG(INFO) <<"CWindowsServiceImpl in OnStop "<<endl;//CreateThread error!
 
-	SetStatus(SERVICE_STOPPED,NO_ERROR,0);
+bool CWindowsServiceImpl::OnStop()
+{
+	// kill service with given name
+	SC_HANDLE schSCManager = OpenSCManager( NULL, NULL, SC_MANAGER_ALL_ACCESS); 
+	if (schSCManager==0) 
+	{
+		long nError = GetLastError();
+		TCHAR pTemp[121];
+		LOG(INFO)<<"OpenSCManager failed, error code = %d";
+	}
+	else
+	{
+		// open the service
+		SC_HANDLE schService = OpenService( schSCManager, s_ServiceImpl->GetName(), SERVICE_ALL_ACCESS);
+		if (schService==0) 
+		{
+			long nError = GetLastError();	
+			LOG(INFO)<<"OpenService failed, error code"<<nError;
+		}
+		else
+		{
+			// call ControlService to kill the given service
+			SERVICE_STATUS status;
+			if(ControlService(schService,SERVICE_CONTROL_STOP,&status))
+			{
+				CloseServiceHandle(schService); 
+				CloseServiceHandle(schSCManager); 
+				LOG(INFO)<<"Service "<< s_ServiceImpl->GetName()<<" killed";
+				return true;
+			}
+			else
+			{
+				long nError = GetLastError();
+				LOG(INFO)<<"ControlService failed, error code = "<< nError;
+			}
+			CloseServiceHandle(schService); 
+		}
+		CloseServiceHandle(schSCManager); 
+	}
+	return FALSE;
 }
+
 #if 0
 HANDLE CWindowsServiceImpl::OnThreadInit()
 {
